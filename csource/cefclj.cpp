@@ -21,6 +21,8 @@
 
 #include "thirdparty/backupsignalhandlers/signal_restore_posix.h"
 
+#include "getdir.h"
+
 void log(const char* s){
 
     FILE *fp = fopen("/tmp/test.txt", "w+");fprintf(fp, "%s\n", s); fclose(fp);
