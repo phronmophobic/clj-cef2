@@ -103,6 +103,7 @@ clang++ \
 
 
 BUILD_DIR=build-"$PLATFORM"-"$ARCH"
+# BUILD_DIR=../resources/darwin-aarch64/
 mkdir -p "$BUILD_DIR"
 cp libcljcef.dylib "$BUILD_DIR"
 cp 'ceflib Helper' "$BUILD_DIR"
