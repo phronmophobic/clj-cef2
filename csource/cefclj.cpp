@@ -51,25 +51,18 @@ extern "C"{
     }
 
 
-    int _cef_initialize(cef_main_args_t* main_args, cef_settings_t* settings, cef_app_t* app, void* sandbox_info){ 
+    int _cef_initialize(cef_main_args_t* main_args, cef_settings_t* settings, cef_app_t* app, void* sandbox_info){
 
-        // #if defined(OS_POSIX)
         // CefInitialize will reset signal handlers. Backup/restore the original
         // signal handlers to avoid crashes in the JVM (see issue #41).
         BackupSignalHandlers();
-        // #endif
 
         wrap_app(app);
 
         // Initialize CEF in the main process.
         int ret = cef_initialize(main_args, settings, app, sandbox_info);
-
-        // #if defined(OS_POSIX)
         RestoreSignalHandlers();
-        // #endif
-
         unwrap_app(app);
-
         return ret;
 
     }
@@ -140,7 +133,7 @@ bool prefix(const char *pre, const char *str)
         CefMainArgs main_args(argc, argv);
 
         // Execute the sub-process logic. This will block until the sub-process should exit.
-        return CefExecuteProcess(main_args, NULL, NULL);
+        return CefExecuteProcess(main_args, nullptr, NULL);
     }
 
 
