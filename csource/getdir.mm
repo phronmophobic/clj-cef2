@@ -3,8 +3,9 @@
 #import <Cocoa/Cocoa.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
-
+#include "getdir.h"
 static NSString* changed_bundle_path;
+static NSString* changed_bundle_identifier;
 
 @implementation NSBundle(changedBundle)
 + (void) changeBundlePath:(NSString*) bundlePath {
@@ -19,6 +20,19 @@ static NSString* changed_bundle_path;
 + (NSBundle*) changedBundle {
     return [NSBundle bundleWithPath:changed_bundle_path];
 }
+
++ (void) changeBundleIdentifier:(NSString*) bundleIdentifier {
+    changed_bundle_identifier = [bundleIdentifier retain];
+
+    Class originalClass = [NSBundle class];
+    Method originalMeth = class_getInstanceMethod(originalClass, @selector(bundleIdentifier));
+    Method replacementMeth = class_getInstanceMethod([self class], @selector(changedBundleIdentifier));
+    method_exchangeImplementations(originalMeth, replacementMeth);
+}
+
+- (NSString*) changedBundleIdentifier {
+    return changed_bundle_identifier;
+}
 @end
 
 
@@ -27,6 +41,10 @@ extern "C"{
 
     void change_bundle_path(const char* bundle_path){
         [NSBundle changeBundlePath:[NSString stringWithUTF8String:bundle_path]];
+    }
+
+    void change_bundle_identifier(const char* bundle_identifier){
+        [NSBundle changeBundleIdentifier:[NSString stringWithUTF8String:bundle_identifier]];
     }
 
 void printDirectory(){

@@ -37,9 +37,6 @@ CEF_DLL="$CEF_DIR/libcef_dll_wrapper/libcef_dll_wrapper.a"
 
 # ./compile_macosx.sh arm64 /tmp/com.phronemophobic.cef/cef_binary_88.1.6+g4fe33a1+chromium-88.0.4324.96_macosarm64_minimal/
 
-ls /tmp/com.phronemophobic.cef
-ls /private/tmp/com.phronemophobic.cef
-
 pushd "$CEF_DIR"
 
 cmake -DCMAKE_BUILD_TYPE=Release -G "Unix Makefiles" -DPROJECT_ARCH="$ARCH" .
@@ -47,31 +44,7 @@ make
 
 popd
 
-clang++ \
-    -arch "$ARCH" \
-    -I "$CEF_DIR" \
-    -framework OpenGL \
-    -framework Cocoa \
-    -framework IOKit \
-    -framework CoreFoundation \
-    -framework CoreVideo \
-    -framework AppKit \
-    -framework CoreGraphics \
-    -framework CoreServices \
-    -framework Foundation \
-    -mmacosx-version-min=10.11 \
-    "$CEF_DLL" \
-    "$CEF_DIR/Release/cef_sandbox.a" \
-    -std=c++17 \
-    -DHELPER \
-    -o "ceflib Helper" \
-    thirdparty/backupsignalhandlers/signal_restore_posix.cpp \
-    getdir.mm \
-    cefclj.cpp
-
-
-#dylib
-
+# dylib
 clang++ \
     -arch "$ARCH" \
     -I "$CEF_DIR" \
@@ -88,10 +61,45 @@ clang++ \
     "$CEF_DLL" \
     -std=c++17 \
     -dynamiclib \
+    -lsandbox \
     -o libcljcef.dylib \
     thirdparty/backupsignalhandlers/signal_restore_posix.cpp \
     getdir.mm \
     cefclj.cpp
+
+clang++ \
+    -arch "$ARCH" \
+    -I "$CEF_DIR" \
+    -mmacosx-version-min=10.11 \
+    -o getdir.o \
+    -c getdir.mm
+
+clang++ \
+    -arch "$ARCH" \
+    -I "$CEF_DIR" \
+    -framework OpenGL \
+    -framework Cocoa \
+    -framework IOKit \
+    -framework CoreFoundation \
+    -framework CoreVideo \
+    -framework AppKit \
+    -framework CoreGraphics \
+    -framework CoreServices \
+    -framework Foundation \
+    -framework Security \
+    -framework SystemConfiguration \
+    -framework ApplicationServices \
+    -mmacosx-version-min=10.11 \
+    "$CEF_DLL" \
+    "$CEF_DIR/Release/cef_sandbox.a" \
+    -std=c++17 \
+    -DHELPER \
+    -lsandbox \
+    -o "ceflib Helper" \
+    thirdparty/backupsignalhandlers/signal_restore_posix.cpp \
+    cefclj.cpp \
+    getdir.o
+
 
 
 BUILD_DIR=build-"$PLATFORM"-"$ARCH"
