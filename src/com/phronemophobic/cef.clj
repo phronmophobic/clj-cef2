@@ -558,23 +558,28 @@ will not block."
 ;;                                      cef_task_t* task,
 ;;                                      int64 delay_ms);
 
-(defn compile-ceflib [{:keys [arch]}]
-  (let [build @cef-build
-        build (if arch
-                (assoc build :arch (guess-arch (str arch)))
-                build)
-        target-dir default-target-dir]
-    (download-and-extract-framework target-dir build)
-    (let [cef-dir-path (.getCanonicalPath (io/file target-dir (unzipped-fname build)))
-          script-path (.getCanonicalPath (io/file "csource"
-                                                  "compile_macosx.sh"))
+(defn compile-ceflib
+  ([]
+   (compile-ceflib {}))
+  ([{:keys [arch]}]
+   (let [build @cef-build
+         build (if arch
+                 (assoc build :arch (guess-arch (str arch)))
+                 build)
+         target-dir default-target-dir]
+     (download-and-extract-framework target-dir build)
+     (let [cef-dir-path (.getCanonicalPath (io/file target-dir (unzipped-fname build)))
+           script-path (.getCanonicalPath (io/file "csource"
+                                                   (case @cef-platform
+                                                     "macos" "compile_macosx.sh"
+                                                     "linux" "compile_linux.sh")))
 
-          arch (if (#{"x86_64" "x64" "64"} (:arch build))
-            "x86_64"
-            "arm64")
-          cmd [script-path arch cef-dir-path]
-          _ (prn cmd)
-          result (apply sh/sh cmd)]
-      (println "exit code:" (:exit result))
-      (println (:out result))
-      (println (:err result)))))
+           arch (if (#{"x86_64" "x64" "64"} (:arch build))
+                  "x86_64"
+                  "arm64")
+           cmd [script-path arch cef-dir-path]
+           _ (prn cmd)
+           result (apply sh/sh cmd)]
+       (println "exit code:" (:exit result))
+       (println (:out result))
+       (println (:err result))))))

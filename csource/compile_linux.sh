@@ -6,7 +6,7 @@ set -x
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
-CEF_DIR='/home/adrian2/workspace/cef_binary_88.2.4+gf3c4ca9+chromium-88.0.4324.150_linux64'
+CEF_DIR='/tmp/com.phronemophobic.cef/cef_binary_117.2.4+g5053a95+chromium-117.0.5938.150_linux64_minimal/'
 
     # "$CEF_DIR/Debug/cef_sandbox.a" \
 clang++ \
