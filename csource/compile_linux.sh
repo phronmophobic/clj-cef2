@@ -6,9 +6,10 @@ set -x
 DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd "$DIR"
 
-CEF_DIR='/tmp/com.phronemophobic.cef/cef_binary_117.2.4+g5053a95+chromium-117.0.5938.150_linux64_minimal/'
+ARCH="$1"
+PLATFORM="linux"
+CEF_DIR="$2"
 
-    # "$CEF_DIR/Debug/cef_sandbox.a" \
 clang++ \
     -I "$CEF_DIR" \
     -L "$CEF_DIR/Release" \
