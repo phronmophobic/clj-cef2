@@ -1,4 +1,6 @@
 libcljcef.dylib
-ceflib Helper
+ceflib Helper*
 libcljcef.so
 ceftest
+*.o
+*.dylib
