@@ -1,6 +1,6 @@
 (ns com.phronemophobic.cef
   "Clojure Wrappers for CEF"
-  (:require [com.phronemophobic.gen2 :as gen2]
+  (:require [com.phronemophobic.gen3 :as gen3]
             [clojure.java.io :as io]
             [clojure.string :as str]
             [clojure.java.shell :as sh]
@@ -65,8 +65,15 @@
 
 (def cef-arch (delay (guess-arch)))
 
-(def cef-version {:cef "88.1.6+g4fe33a1"
-                  :chromium "88.0.4324.96"})
+
+
+;; 117.2.4+g5053a95+chromium-117.0.5938.150
+(def cef-version {:cef "117.2.4+g5053a95"
+                  :chromium "117.0.5938.150"
+                  :build "minimal"
+                  ;; :build "standard"
+                  })
+
 (def cef-build (delay
                  (merge
                   cef-version
@@ -74,10 +81,14 @@
                    :platform @cef-platform})))
 
 
-(defn download-fname [{:keys [cef chromium arch platform]}]
+(defn download-fname [{:keys [cef chromium arch platform build]}]
   (let [fname (format
-               "cef_binary_%s+chromium-%s_%s%s_minimal.tar.bz2"
-               cef chromium platform arch)]
+               ;;"cef_binary_%s+chromium-%s_%s%s_minimal.tar.bz2"
+               "cef_binary_%s+chromium-%s_%s%s%s.tar.bz2"
+               cef chromium platform arch
+               (if (= build "standard")
+                 ""
+                 (str "_" build)))]
     fname))
 
 (defn unzipped-fname [{:keys [cef chromium arch platform] :as build}]
@@ -104,9 +115,7 @@
 
 (cinterop/defc BackupSignalHandlers cinterop/cljcef cinterop/void [])
 
-(gen2/import-cef-classes)
-(gen2/gen-wrappers)
-(gen2/gen-docs)
+(gen3/import-structs!)
 
 (defonce ^{:private true
            :no-doc true}
@@ -115,16 +124,8 @@
 (def ^:no-doc void Void/TYPE)
 
 (defc change_bundle_path cinterop/cljcef void [bundle-path])
-
-(defc cef_string_wide_to_utf16 cinterop/cef Integer/TYPE [wstr len cef-string])
-
-(defn cef-string
-  "Convert a java String into a CefString"
-  [s]
-  (let [cef-str (preserve! (CefStringUtf16.))
-        wstr (preserve! (WString. s))
-        _ (cef_string_wide_to_utf16 wstr (.length wstr) cef-str)]
-    cef-str))
+(defc change_bundle_identifier cinterop/cljcef void [bundle-identifier])
+(defc printDirectory cinterop/cljcef void [])
 
 (defc cef_execute_process cinterop/cef Integer/TYPE [main-args app ])
 #_(defn cef-execute-process [main-args app]
@@ -170,7 +171,7 @@
   render process."
   [window-info client url browser-settings extra-info request-context]
   (assert @prepared-environment "Did you call download-and-prepare-environment! yet?")
-  (cef_browser_host_create_browser window-info client (when url (cef-string url)) browser-settings extra-info request-context))
+  (cef_browser_host_create_browser window-info client (when url (gen3/cef-string url)) browser-settings extra-info request-context))
 
 ;; (defc cef_browser_host_create_browser_sync cinterop/cef CefBrowser [window-info client url browser-settings extra-info request-context])
 
@@ -367,6 +368,7 @@ will not block."
          target-download (io/file target-dir "cef.tar.bz2")
          framework-path (io/file target-dir
                                  (unzipped-fname build)
+                                 ;;"Debug"
                                  "Release"
                                  "Chromium Embedded Framework.framework")
          link-path (io/file target-dir "Chromium Embedded Framework.framework")]
@@ -384,7 +386,17 @@ will not block."
        (when-not (.exists link-path)
          (Files/createSymbolicLink (.toPath link-path)
                                    (.toPath framework-path)
-                                   (into-array FileAttribute []))))
+                                   (into-array FileAttribute [])))
+
+
+       ;; extract libraries
+       (doseq [f (-> (io/file framework-path
+                              "Libraries")
+                     (.listFiles))
+               :when (str/ends-with? (.getName f) ".dylib")]
+         (with-open [os (io/output-stream (io/file target-dir
+                                                   (.getName f)))]
+           (io/copy f os))))
 
      (when (.exists target-download)
        (.delete target-download))
@@ -424,6 +436,8 @@ will not block."
        ))
 
      (change_bundle_path (.getAbsolutePath (io/as-file target-dir)))
+     ;; (change_bundle_identifier "foobar")
+     ;; (printDirectory)
      (BackupSignalHandlers)
      (reset! prepared-environment true)
      nil)
@@ -484,8 +498,8 @@ will not block."
   ([app]
    (cef-initialize app default-target-dir))
   ([app target-dir]
-   (cef-initialize (map->main-args)
-                   (map->settings
+   (cef-initialize (gen3/map->main-args)
+                   (gen3/map->settings
                     {:framework-dir-path (.getAbsolutePath (io/file target-dir "Chromium Embedded Framework.framework"))
                      :browser-subprocess-path (.getAbsolutePath (io/file target-dir "ceflib Helper"))
                      :main-bundle-path (.getAbsolutePath target-dir)
@@ -529,13 +543,10 @@ will not block."
 
 (defn post-task-to-main [f]
   (cef_post_task 0
-                 (map->task
+                 (gen3/map->task
                   {:execute
                    (fn [this]
                      (f))})))
-
-(defc cef_task_runner_get_for_thread cinterop/cef CefTaskRunner [thread-id])
-
 
 
 ;; ///
