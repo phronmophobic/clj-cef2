@@ -112,7 +112,9 @@
                                (.getAbsolutePath (io/file target-dir "Chromium Embedded Framework.framework"))
                                :browser-subprocess-path
                                (.getAbsolutePath (io/file target-dir "ceflib Helper"))
-                               ;; :locales-dir-path (.getAbsolutePath (io/file target-dir "locales"))
+                               :locales-dir-path (.getAbsolutePath (io/file target-dir "locales"))
+                               ;; :log-severity gen3/LOGSEVERITY_DEBUG
+
                                ;; :no-sandbox 1
                                ;; :log-file (.getAbsolutePath (io/file "cef.log"))
                                :windowless-rendering-enabled 1
