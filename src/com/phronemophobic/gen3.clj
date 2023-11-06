@@ -207,6 +207,22 @@
                     (.writeField "length" data-len))]
       cef-str)))
 
+(defn cef-string-ref [^String s]
+  (if (= s "")
+    (cef_string_utf16_t.)
+    (let [bs (.getBytes s "utf-16le")
+          len (alength bs)
+          data (doto (Memory. len)
+                 (.write 0 bs 0 len)
+                 preserve!)
+          _ (assert (even? len))
+          data-len (quot len 2)
+          cef-str (doto (cef_string_utf16_tByReference.)
+                    (.writeField "str" (doto (ShortByReference.)
+                                         (.setPointer data)))
+                    (.writeField "length" data-len))]
+      cef-str)))
+
 (defn refop! [s k]
   (.invoke (Function/getFunction
             (-> s :base k))
@@ -311,6 +327,12 @@
                 
                 cb-ptr# (preserve! (CallbackReference/getFunctionPointer cb#))]
             cb-ptr#)))
+
+      :coffi.mem/pointer
+      (case (second type)
+        :clong/cef_string_utf16_t `(cef-string-ref ~vsym)
+        ;; else
+        vsym)
 
       ;;else
       vsym)
@@ -485,21 +507,75 @@
 
 (gen-wrappers)
 
+(defmulti call (fn [obj k & args]
+                 [(class obj) k]))
+
+(defn ^:private call-method [struct-sym field]
+  (let [[_ arg-types ret-type] (:datatype field)
+        args (rest ;; skip struct arg
+              (map (fn [i]
+                     (gensym (str "arg-" i "-")))
+                   (range (count arg-types))))
+        res## (gensym "result-")]
+    `(let [cls# (gen/coffi-type->jna struct-prefix ~ret-type)]
+       (defmethod call [~struct-sym
+                        ~(keyword (:name field))]
+         [struct# _# ~@args]
+         (let [~res##
+               (.invoke (Function/getFunction
+                         (~(-> field
+                               :name
+                               keyword)
+                          struct#))
+                        cls#
+                        (to-array
+                         [struct#
+                          ~@(eduction
+                             (map (fn [[type vsym]]
+                                    (coercer type vsym)))
+                             (map vector
+                                  ;; struct already included
+                                  (rest arg-types)
+                                  args))]))]
+           ~(uncoerce ret-type res##))))))
+
+(defn ^:private call-methods [struct]
+  (let [struct-name (-> struct
+                        :id
+                        name)
+        struct-sym (symbol (str struct-name "ByReference"))]
+   (into []
+         (comp
+          (filter (fn [{:keys [datatype]}]
+                    (and (vector? datatype)
+                         (= :coffi.ffi/fn (first datatype)))))
+          (map #(call-method struct-sym %)))
+         (:fields struct))))
+
+(defmacro gen-call-methods []
+  `(do
+     ~@(->> (:structs api)
+            (mapcat call-methods))))
+
+(gen-call-methods)
+
 (comment
   (def my-struct
     (->> api
          :structs
          (filter #(= ;;:clong/cef_life_span_handler_t
-                     :clong/cef_frame_t
-                     (:id %)))
+                   :clong/cef_frame_t
+                   (:id %)))
          first))
+
+  (clojure.pprint/pprint (call-methods my-struct))
 
   (clojure.pprint/pprint
    (gen-wrapper* my-struct))
 
   (def kls (com.phronemophobic.clong.gen.jna/coffi-type->jna
-    com.phronemophobic.gen3/struct-prefix
-    [:coffi.mem/pointer :clong/cef_render_handler_t]))
+            com.phronemophobic.gen3/struct-prefix
+            [:coffi.mem/pointer :clong/cef_render_handler_t]))
   (instance? kls (map->render-handler))
 
 
