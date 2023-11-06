@@ -77,7 +77,7 @@
   render process."
   [window-info client url browser-settings extra-info request-context]
   (assert @prepared-environment "Did you call download-and-prepare-environment! yet?")
-  (cef_browser_host_create_browser window-info client (when url (gen3/cef-string url)) browser-settings extra-info request-context))
+  (gen3/cef_browser_host_create_browser window-info client (when url (gen3/cef-string-ref url)) browser-settings  extra-info request-context))
 
 ;; (defc cef_browser_host_create_browser_sync cinterop/cef CefBrowser [window-info client url browser-settings extra-info request-context])
 
