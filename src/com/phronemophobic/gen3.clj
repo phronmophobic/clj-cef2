@@ -183,9 +183,24 @@
 
 (def api (-> raw-api
              (fix-struct-names)
-             (fix-forward-references)))
+             (fix-forward-references)
+             (gen/replace-forward-references)))
 
-(gen/def-api @cinterop/cef api)
+(gen/def-enums (:enums api))
+(gen/def-structs (:structs api) struct-prefix)
+
+
+(defn fdef->defn [f]
+  (let [{:keys [->fn name doc-string args]} (gen/fn-ast struct-prefix f)]
+    `(let [f# (delay (~->fn @cinterop/cef))]
+                (defn ~name ~doc-string ~args
+                  (@f# ~@args)))))
+;; (gen/def-api @cinterop/cef api)
+(defmacro gen-fns []
+  `(do
+     ~@(map fdef->defn (:functions api))))
+
+(gen-fns)
 
 (import-structs!)
 
