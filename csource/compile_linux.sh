@@ -40,11 +40,13 @@ clang++ \
 cp libcljcef.so ../resources/extract/linux-x86-64
 cp "ceflib Helper" ../resources/extract/linux-x86-64
 
-cp libcljcef.so /tmp/com.phronemophobic.cef/
-cp "ceflib Helper" /tmp/com.phronemophobic.cef/
-
 BUILD_DIR=build-"$PLATFORM"-"$ARCH"
 
+mkdir -p "$BUILD_DIR"
+cp libcljcef.so "$BUILD_DIR"
+cp 'ceflib Helper' "$BUILD_DIR"
+
+BUILD_DIR=~/.cljcef/
 mkdir -p "$BUILD_DIR"
 cp libcljcef.so "$BUILD_DIR"
 cp 'ceflib Helper' "$BUILD_DIR"
