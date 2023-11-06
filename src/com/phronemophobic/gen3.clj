@@ -15,6 +15,7 @@
            java.nio.charset.Charset
            java.nio.ByteBuffer
            java.nio.CharBuffer
+           com.sun.jna.Platform
            com.sun.jna.Memory
            com.sun.jna.Function
            com.sun.jna.Pointer
@@ -181,9 +182,64 @@
    :coffi.mem/pointer
    api))
 
+(defn fix-linux-window-info* [api]
+  (specter/setval
+   [:structs
+    specter/ALL
+    #(= :clong/cef_window_info_t
+        (:id %))]
+   {:kind "CXCursor_StructDecl",
+    :spelling "struct _cef_window_info_t",
+    :type "CXType_Record",
+    :id :clong/cef_window_info_t,
+    :size-in-bytes 72,
+    :fields
+    [{:type "struct _cef_string_utf16_t",
+      :datatype :clong/cef_string_utf16_t,
+      :name "window_name",
+      :bitfield? false,
+      :calculated-offset 0}
+     {:type "struct _cef_rect_t",
+      :datatype :clong/cef_rect_t,
+      :name "bounds",
+      :bitfield? false,
+      :calculated-offset 192}
+     {:type "unsigned long",
+      :datatype :coffi.mem/long,
+      :name "parent_window",
+      :bitfield? false,
+      :calculated-offset 320}
+     {:type "int",
+      :datatype :coffi.mem/int,
+      :name "windowless_rendering_enabled",
+      :bitfield? false,
+      :calculated-offset 384}
+     {:type "int",
+      :datatype :coffi.mem/int,
+      :name "shared_texture_enabled",
+      :bitfield? false,
+      :calculated-offset 416}
+     {:type "int",
+      :datatype :coffi.mem/int,
+      :name "external_begin_frame_enabled",
+      :bitfield? false,
+      :calculated-offset 448}
+     {:type "unsigned long",
+      :datatype :coffi.mem/long,
+      :name "window",
+      :bitfield? false,
+      :calculated-offset 512}]}
+   api))
+
+(defn fix-linux-window-info [api]
+  (if (Platform/isLinux)
+    (fix-linux-window-info* api)
+    api))
+
 (def api (-> raw-api
              (fix-struct-names)
              (fix-forward-references)
+             (fix-linux-window-info)
              (gen/replace-forward-references)))
 
 (gen/def-enums (:enums api))
