@@ -93,7 +93,7 @@
         url-str (format "%s%s" base (URLEncoder/encode (download-fname build) "utf-8"))]
     (clojure.java.io/as-url url-str)))
 
-(def default-target-dir (io/file "/tmp" "com.phronemophobic.cef"))
+(def default-target-dir (io/file (System/getProperty "user.home") ".cljcef"))
 (defn extract-helper
   "Extract the helper process executable from the jar to the file system.
 
