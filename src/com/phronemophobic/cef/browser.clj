@@ -133,7 +133,7 @@
 
 (defn- start-browser*
   "Must be called on the main thread."
-  [[initial-width initial-height] url dispatch-main
+  [[initial-width initial-height initial-content-scale] url dispatch-main
    {:keys [on-after-created
            on-before-close
            on-paint
@@ -146,7 +146,8 @@
    (or cef-path
        env/default-target-dir))
 
-  (let [browser-settings (gen3/map->browser-settings)
+  (let [initial-content-scale (or initial-content-scale 1)
+        browser-settings (gen3/map->browser-settings)
 
         last-content-scale (volatile! nil)
         life-span-handler
@@ -155,7 +156,7 @@
           (fn [this browser]
             (swap! browsers assoc (gen3/call browser :get_identifier)
                    {:browser browser
-                    :content-scale 1
+                    :content-scale initial-content-scale
                     :width initial-width
                     :height initial-height})
             (when on-after-created
@@ -241,7 +242,7 @@
             :content-scale content-scale
             :width w
             :height h)
-     (println (doto browser-host
+     #_(println (doto browser-host
                 (.read)))
      (gen3/call browser-host :notify_screen_info_changed) ;; (.notifyScreenInfoChanged browser-host)
      (gen3/call browser-host :was_resized) ;;(.wasResized browser-host)
