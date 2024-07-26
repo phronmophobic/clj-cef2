@@ -1,4 +1,5 @@
 (ns com.phronemophobic.gen3
+  (:refer-clojure :exclude [time])
   (:require [com.phronemophobic.clong.gen.jna :as gen]
             [clojure.edn :as edn]
             [clojure.java.io :as io]
