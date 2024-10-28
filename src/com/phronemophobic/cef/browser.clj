@@ -139,7 +139,10 @@
            on-paint
            on-paint+content-scale
            remote-debugging-port
-           cef-path]
+           cef-path
+
+           load-handler/on-load-start
+           life-span-handler/on-before-popup]
     :as opts}]
 
   (cef/prepare-environment!
@@ -162,6 +165,22 @@
             (when on-after-created
               (on-after-created browser))
             (dispatch-main cef/cef-do-message-loop-work))
+          :on-before-popup
+          (when on-before-popup
+            (fn [this browser frame target-url target-frame-name target-disposition user-gesture popup-features window-info client settings extra-info no-javascript-access]
+              (let [target-url-str
+                    (when target-url
+                      (gen3/cef_string_utf16->string target-url))]
+                ;; passing a map is inconsistent, but probably also better
+                (on-before-popup {:target-url target-url-str
+                                  :browser browser
+                                  :frame frame}))
+              ;; cancel popup, because it causes crashes
+              ;; it takes over the main thread and starts
+              ;; interacting directly with the OS Windowing system
+              ;; which is bad.
+              1))
+
           :on-before-close
           (fn [this browser]
             (try
@@ -197,9 +216,20 @@
                (vreset! last-content-scale content-scale))
              ;; we modified screen-info (see docs)
              (int 1))}))
+
+        load-handler
+        (gen3/map->load-handler
+         {:on-load-start
+          (fn [_ browser frame transition-type]
+            (when on-load-start
+              (on-load-start browser frame transition-type)))})
+
         client
         (gen3/map->client
-         {:get-life-span-handler
+         {:get-load-handler
+          (fn [client]
+            load-handler)
+          :get-life-span-handler
           (fn [client]
             life-span-handler)
           :get-render-handler
