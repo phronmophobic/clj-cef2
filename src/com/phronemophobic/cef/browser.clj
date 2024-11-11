@@ -116,7 +116,7 @@
                                ;; :log-severity gen3/LOGSEVERITY_DEBUG
 
                                ;; :no-sandbox 1
-                               ;; :log-file (.getAbsolutePath (io/file "cef.log"))
+                               ;; :log-file (.getAbsolutePath (io/file "/var/tmp/cef.log"))
                                :windowless-rendering-enabled 1
                                :external-message-pump 1}
                               (when cache-path
