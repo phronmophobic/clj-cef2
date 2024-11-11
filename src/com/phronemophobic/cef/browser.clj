@@ -96,7 +96,14 @@
                 (async/put! debounce-chan delay))})
             app
             (gen3/map->app
-             {:get-browser-process-handler
+             {:on-before-command-line-processing
+              (fn [app process-type command-line]
+                (when remote-debugging-port
+                  (gen3/call command-line
+                             :append_switch_with_value
+                             "remote-allow-origins"
+                             (str "http://localhost:" remote-debugging-port))))
+              :get-browser-process-handler
               (fn [app]
                 browser-process-handler)})
             
