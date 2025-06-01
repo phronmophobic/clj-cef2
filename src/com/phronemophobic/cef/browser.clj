@@ -121,6 +121,8 @@
 
             target-dir (or cef-path
                            env/default-target-dir)]
+        ;; TODO: make it show this can get shutdown cleanly when
+        ;; all browsers are closed.
         (start-debounce-thread dispatch-main)
 
         (cef/cef-initialize (gen3/map->main-args)
