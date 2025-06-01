@@ -55,24 +55,35 @@
 
 
 (defn start-debounce-thread [dispatch-main]
-  (async/thread
-    (prn "entering dispatch thread")
-    (try
-      (loop [to nil]
-        (let [[delay port] (async/alts!!
-                            (if to
-                              [to debounce-chan]
-                              [debounce-chan]))]
-          (if (or (= port to)
-                  (<= delay 0))
-            (do (dispatch-main cef/cef-do-message-loop-work)
+  (let [;; we use this chan to make sure we don't keep
+        ;; queuing up work that never gets done
+        cb-chan (async/chan
+                 (async/sliding-buffer 1))]
+    (async/thread
+      (prn "entering dispatch thread")
+      (try
+        (loop [to nil]
+          (let [[delay port] (async/alts!!
+                              (if to
+                                [to debounce-chan]
+                                [debounce-chan]))]
+            (if (or (= port to)
+                    (<= delay 0))
+              (do 
+                (dispatch-main 
+                 (fn []
+                   (cef/cef-do-message-loop-work)
+                   (async/put! cb-chan true)))
+                ;; wait for enqueued work to finish
+                (async/<!! cb-chan)
+                
                 (recur (default-timeout)))
-            ;; else
-            (recur (async/timeout delay)))))
-      (catch Throwable e
-        (clojure.pprint/pprint e))
-      (finally
-        (prn "Exiting dispatch thread"))))
+              ;; else
+              (recur (async/timeout delay)))))
+        (catch Throwable e
+          (clojure.pprint/pprint e))
+        (finally
+          (prn "Exiting dispatch thread")))))
   nil)
 
 
